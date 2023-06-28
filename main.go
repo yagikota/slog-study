@@ -1,8 +1,13 @@
 package main
 
-import "log"
+import (
+	"log"
+	"os"
+)
 
 func main() {
-	log.Panic("Hello from Go application!")
+	// デフォルトのロガーが標準エラーではなく標準出力に書き込まれるように設定
+	defaultLogger := log.Default()
+	defaultLogger.SetOutput(os.Stdout)
 	log.Println("Hello from Go application!")
 }
