@@ -1,15 +1,12 @@
 package main
 
 import (
-	"log"
-	"os"
+	"golang.org/x/exp/slog"
 )
 
 func main() {
-	logger := log.New(
-		os.Stderr,
-		"MyApplication: ",
-		log.Ldate|log.Ltime|log.Lmicroseconds|log.LUTC|log.Llongfile,
-	)
-	logger.Println("Hello from Go application!")
+	slog.Debug("Debug message")
+	slog.Info("Info message")
+	slog.Warn("Warning message")
+	slog.Error("Error message")
 }
