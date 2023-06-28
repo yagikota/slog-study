@@ -1,12 +1,18 @@
 package main
 
 import (
+	"net/http"
+	"os"
+
 	"golang.org/x/exp/slog"
 )
 
 func main() {
-	slog.Debug("Debug message")
-	slog.Info("Info message")
-	slog.Warn("Warning message")
-	slog.Error("Error message")
+	handler := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.NewLogLogger(handler, slog.LevelError)
+
+	server := http.Server{
+		ErrorLog: logger,
+	}
 }
