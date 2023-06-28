@@ -1,7 +1,7 @@
 package main
 
 import (
-	"net/http"
+	"context"
 	"os"
 
 	"golang.org/x/exp/slog"
@@ -10,9 +10,12 @@ import (
 func main() {
 	handler := slog.NewJSONHandler(os.Stdout, nil)
 
-	logger := slog.NewLogLogger(handler, slog.LevelError)
+	logger := slog.New(handler)
 
-	server := http.Server{
-		ErrorLog: logger,
-	}
+	logger.LogAttrs(
+		context.Background(),
+		slog.LevelInfo,
+		"incoming request",
+		slog.String("method", "GET"),
+	)
 }
