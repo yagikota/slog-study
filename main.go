@@ -1,29 +1,44 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"golang.org/x/exp/slog"
 )
 
+const (
+	LevelTrace  = slog.Level(-8)
+	LevelNotice = slog.Level(2)
+	LevelFatal  = slog.Level(12)
+)
+
+var LevelNames = map[slog.Leveler]string{
+	LevelTrace:  "TRACE",
+	LevelNotice: "NOTICE",
+	LevelFatal:  "FATAL",
+}
+
 func main() {
-	logLevel := &slog.LevelVar{}
 	opts := &slog.HandlerOptions{
-		Level: logLevel,
+		Level: LevelTrace,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.LevelKey {
+				level := a.Value.Any().(slog.Level)
+				levelLabel, exists := LevelNames[level]
+				if !exists {
+					levelLabel = level.String()
+				}
+				a.Value = slog.StringValue(levelLabel)
+			}
+			return a
+		},
 	}
 
-	handler := slog.NewJSONHandler(os.Stdout, opts)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 
-	logger := slog.New(handler)
-	logLevel.Set(slog.LevelError)
-	logger.Debug("Debug message")
-	logger.Info("Info message")
-	logger.Warn("Warning message")
-	logger.Error("Error message")
-
-	logLevel.Set(slog.LevelDebug)
-	logger.Debug("Debug message")
-	logger.Info("Info message")
-	logger.Warn("Warning message")
-	logger.Error("Error message")
+	ctx := context.Background()
+	logger.Log(ctx, LevelTrace, "Trace message")
+	logger.Log(ctx, LevelNotice, "Notice message")
+	logger.Log(ctx, LevelFatal, "Fatal level")
 }
