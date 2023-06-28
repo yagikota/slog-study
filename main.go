@@ -21,7 +21,8 @@ var LevelNames = map[slog.Leveler]string{
 
 func main() {
 	opts := &slog.HandlerOptions{
-		Level: LevelTrace,
+		AddSource: true,
+		Level:     LevelTrace,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.LevelKey {
 				level := a.Value.Any().(slog.Level)
