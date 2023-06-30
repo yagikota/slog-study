@@ -32,27 +32,30 @@ type prettyJSONHandlerOptions struct {
 	indent  int
 }
 
-func makeFields(fields map[string]interface{}, a slog.Attr) {
+func addFields(fields map[string]any, a slog.Attr) {
 	value := a.Value.Any()
 	if _, ok := value.([]slog.Attr); !ok {
 		fields[a.Key] = value
 		return
 	}
 
-	innerFields := make(map[string]interface{}, len(value.([]slog.Attr)))
-	for _, attr := range value.([]slog.Attr) {
-		makeFields(innerFields, attr)
+	attrs := value.([]slog.Attr)
+	// ネストしている場合、再起的にフィールドを探索する。
+	innerFields := make(map[string]any, len(attrs))
+	for _, attr := range attrs {
+		addFields(innerFields, attr)
 	}
 	fields[a.Key] = innerFields
 }
 
 func (h *prettyJSONHandler) Handle(_ context.Context, r slog.Record) error {
-	fields := make(map[string]interface{}, r.NumAttrs())
+	fields := make(map[string]any, r.NumAttrs())
 	fields["time"] = r.Time
 	fields["level"] = r.Level
 	fields["message"] = r.Message
+
 	r.Attrs(func(a slog.Attr) bool {
-		makeFields(fields, a)
+		addFields(fields, a)
 		return true
 	})
 
@@ -82,13 +85,17 @@ func main() {
 	logger.Error("Error message")
 
 	logger.Info(
-		"image uploaded",
-		slog.Int("id", 23123),
-		slog.Group("properties",
-			slog.Int("width", 4000),
-			slog.Group("properties",
-				slog.Int("height", 3000),
-				slog.String("format", "jpeg")),
+		"nest log",
+		slog.String("key", "1"),
+		slog.Group(
+			"inner1",
+			slog.String("inner1Key1", "1"),
+			slog.String("inner1Key2", "2"),
+			slog.Group(
+				"inner2",
+				slog.String("inner2Key1", "1"),
+				slog.String("inner2Key2", "2"),
+			),
 		),
 	)
 }
