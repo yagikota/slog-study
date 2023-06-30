@@ -1,39 +1,39 @@
 package main
 
 import (
-	"fmt"
-	"time"
+	"context"
+	"io"
 
-	"go.uber.org/zap"
+	"golang.org/x/exp/slog"
 )
 
+type prettyJSONHandler struct {
+	slog.Handler
+	indent int
+}
+
+type prettyJSONHandlerOptions struct {
+	slogOps slog.HandlerOptions
+	indent  int
+}
+
+func newPrettyHandler(w io.Writer, opts *prettyJSONHandlerOptions) *prettyJSONHandler {
+	return &prettyJSONHandler{
+		Handler: slog.NewJSONHandler(w, &opts.slogOps),
+		indent:  opts.indent,
+	}
+}
+
+func (*prettyJSONHandler) Handle(_ context.Context, r slog.Record) error {
+ // todo
+}
+
 func main() {
-	// returns zap.Logger, a strongly typed logging API
-	logger := zap.Must(zap.NewProduction())
+	handler := newPrettyHandler()
+	logger := slog.New(handler)
+	logger.Debug("Debug message")
+	logger.Info("Info message")
+	logger.Warn("Warning message")
+	logger.Error("Error message")
 
-	defer logger.Sync()
-
-	start := time.Now()
-
-	logger.Info("Hello from zap Logger",
-		zap.String("name", "John"),
-		zap.Int("age", 9),
-		zap.String("email", "john@gmail.com"),
-	)
-
-	// convert zap.Logger to zap.SugaredLogger for a more flexible and loose API
-	// that's still faster than most other structured logging implementations
-	sugar := logger.Sugar()
-	sugar.Warnf("something bad is about to happen")
-	sugar.Errorw("something bad happened",
-		"error", fmt.Errorf("oh no"),
-		"answer", 42,
-	)
-
-	// you can freely convert back to the base `zap.Logger` type at the boundaries
-	// of performance-sensitive operations.
-	logger = sugar.Desugar()
-	logger.Warn("the operation took longer than expected",
-		zap.Int64("time_taken_ms", time.Since(start).Milliseconds()),
-	)
 }
