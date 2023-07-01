@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -13,15 +12,15 @@ import (
 
 // slog.Handlerをラップして独自のハンドラーを定義
 type prettyJSONHandler struct {
-	slog.Handler
-	l      *log.Logger
-	indent int
+	slog.Handler // Embedded interfaces: https://go.dev/ref/spec#Interface_types
+	w            io.Writer
+	indent       int
 }
 
-func newPrettyHandler(w io.Writer, opts prettyJSONHandlerOptions) *prettyJSONHandler {
+func NewJSONPrettyHandler(w io.Writer, opts prettyJSONHandlerOptions) *prettyJSONHandler {
 	return &prettyJSONHandler{
 		Handler: slog.NewJSONHandler(w, &opts.slogOps),
-		l:       log.New(w, "", 0),
+		w:       w,
 		indent:  opts.indent,
 	}
 }
@@ -48,6 +47,7 @@ func addFields(fields map[string]any, a slog.Attr) {
 	fields[a.Key] = innerFields
 }
 
+// Handleメソッドを差し替える
 func (h *prettyJSONHandler) Handle(_ context.Context, r slog.Record) error {
 	fields := make(map[string]any, r.NumAttrs())
 	fields["time"] = r.Time
@@ -64,7 +64,7 @@ func (h *prettyJSONHandler) Handle(_ context.Context, r slog.Record) error {
 		return err
 	}
 
-	h.l.Println(string(b))
+	h.w.Write(b)
 
 	return nil
 }
@@ -76,7 +76,7 @@ func main() {
 		},
 		indent: 4,
 	}
-	handler := newPrettyHandler(os.Stdout, ops)
+	handler := NewJSONPrettyHandler(os.Stdout, ops)
 	logger := slog.New(handler)
 
 	logger.Debug("Debug message")
@@ -84,7 +84,7 @@ func main() {
 	logger.Warn("Warning message")
 	logger.Error("Error message")
 
-	logger.Info(
+	logger.Debug(
 		"nest log",
 		slog.String("key", "1"),
 		slog.Group(
